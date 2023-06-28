@@ -110,6 +110,70 @@ public class YelpDao {
 			return null;
 		}
 	}
+
+	public List<User> getAllUsers(Integer nMinRecensioni) {
+		String sql = "SELECT DISTINCT u.*, COUNT(r.review_id)AS n "
+				+ "FROM users u, reviews r "
+				+ "WHERE u.user_id = r.user_id "
+				+ "GROUP BY u.user_id "
+				+ "HAVING n >= ? ";
+		List<User> result = new ArrayList<User>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, nMinRecensioni);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				User user = new User(res.getString("user_id"),
+						res.getInt("votes_funny"),
+						res.getInt("votes_useful"),
+						res.getInt("votes_cool"),
+						res.getString("name"),
+						res.getDouble("average_stars"),
+						res.getInt("review_count"));
+				result.add(user);
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	
-	
+	public Integer getSimilarita(Integer anno, User u1, User u2) {
+		String sql = "SELECT COUNT(DISTINCT r1.review_id)AS similarita "
+				+ "FROM users u1, users u2, reviews r1, reviews r2 "
+				+ "WHERE r1.user_id = u1.user_id AND r2.user_id = u2.user_id "
+				+ "AND r1.business_id = r2.business_id "
+				+ "AND YEAR(r1.review_date) = ? AND YEAR(r2.review_date) = ? "
+				+ "AND u1.user_id = ? "
+				+ "AND u2.user_id = ? ";
+		Integer similarita = 0;
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, anno);
+			st.setInt(2, anno);
+			st.setString(3, u1.getUserId());
+			st.setString(4, u2.getUserId());
+			ResultSet res = st.executeQuery();
+			if (res.first()) {
+				similarita = res.getInt("similarita");
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return similarita;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }
